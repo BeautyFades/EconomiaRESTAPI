@@ -11,10 +11,10 @@ class DBConnector():
         self.db_user = db_user
         self.db = db
         self.engine = sq.create_engine(f'{db_type}://{db_user}:{db_pw}@{db_host}/{db}')
+        logging.info(f'Connected to {self.db_type}/{self.db} as {self.db_user}')
 
 
     def execute_query(self, query: str, verbose: bool = False):
-        logging.info(f'Connected to {self.db_type}/{self.db} as {self.db_user}')
         with self.engine.connect() as con:
             logging.info(f'Executing query: {query}')
             query_res = con.execute(query)

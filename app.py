@@ -5,6 +5,7 @@ import os
 from datetime import datetime
 from google.cloud import storage
 from google.oauth2 import service_account
+from ScraperLogger import ScraperLogger
 from DBConnector import DBConnector
 import pandas as pd
 
@@ -12,15 +13,7 @@ import pandas as pd
 if config.environment == 'dev':
     os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'keyfile.json'
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-formatter = logging.Formatter('[%(asctime)s] | [%(levelname)s] >>> %(message)s', 
-                              '%Y-%m-%d %H:%M:%S %Z')
-stdout_handler = logging.StreamHandler(sys.stdout)
-stdout_handler.setLevel(logging.DEBUG)
-stdout_handler.setFormatter(formatter)
-logger.addHandler(stdout_handler)
-
+l = ScraperLogger()
 
 app = Flask('app')
 
@@ -30,6 +23,8 @@ def get_client_ip_address():
 
 @app.route("/", methods=["GET"])
 def health_check():
+
+    logging.info(f'Economia RESTAPI received / request from {get_client_ip_address()}. Health checking...')
     return Response(
             "[{'returnStatus': 'success'}, {'statusCode': '200'}, {'message': 'alive'}]", 
             status=200, 
@@ -40,29 +35,31 @@ def health_check():
 @app.route("/admin/v1/update_db/<admin_key>", methods=["POST"])
 def update_db_with_latest_gcs_data(admin_key):
     if request.method == 'POST':
-        app.logger.info(f'Economia RESTAPI received POST to /admin/v1/update_db request from {get_client_ip_address()}.')
+        logging.info(f'Economia RESTAPI received POST to /admin/v1/update_db request from {get_client_ip_address()}.')
 
         if admin_key == 'iamtheboss':
             try:
-                app.logger.info(f'Downloading newest data from GCS to container.')
+                logging.info(f'Downloading newest data from GCS to container.')
                 gcs_client = storage.Client()
                 bucket = gcs_client.get_bucket('economia-webscraper')
                 file_name_on_gcs = datetime.today().strftime('%Y_%m_%d_' + 'selic.parquet')
                 blob = bucket.blob(f"bcb-selic/{file_name_on_gcs}")
 
                 blob.download_to_filename('latest_selic.parquet')
-                app.logger.info(f'Data downloaded successfully. Starting insertion')
+                logging.info(f'Data downloaded successfully. Starting insertion')
 
                 df = pd.read_parquet('latest_selic.parquet')
                 elems = df.values.tolist()
                 query_values = ''
+
+                # Formatting the query_values variable so it can be passed as a SQL parameter to a INSERT INTO statement
                 for i in range(len(elems)):
                     row = f"({elems[i][0]}, '{elems[i][1]}', '{elems[i][2]}', '{elems[i][3]}', '{elems[i][4]}', '{elems[i][5]}', '{elems[i][6]}')"
                     row = row.replace("'None'", 'null') # In case there are None values, replace them with Postgres null, without quotes.
 
                     query_values = query_values + str(row) + ', '
 
-                query_values = query_values[:-2] # Removing last two characters (', ') at the end of string.
+                query_values = query_values[:-2] # Removing last two characters (', ') at the very end of string.
                 
                 db = DBConnector(config.db_type, config.db_user, config.db_pw, config.db_host, config.db)
                 db.execute_query(f"INSERT INTO selic VALUES {query_values} ON CONFLICT (n_reuniao) DO NOTHING")
@@ -81,7 +78,7 @@ def update_db_with_latest_gcs_data(admin_key):
             )
 
         else:
-            app.logger.info(f'Economia RESTAPI received FAILED AUTHENTICATION POST to /admin/v1/update_db {get_client_ip_address()}.')
+            logging.info(f'Economia RESTAPI received FAILED AUTHENTICATION POST to /admin/v1/update_db {get_client_ip_address()}.')
             return Response(
                     "[{'returnStatus': 'fail'}, {'statusCode': '401'}, {'message': 'unauthorized'}]", 
                     status=401, 
@@ -90,8 +87,9 @@ def update_db_with_latest_gcs_data(admin_key):
 
 @app.route("/api/v1/latest/<n>", methods=["GET"])
 def return_latest_data(n):
-    app.logger.info(f'Economia RESTAPI received /api/v1/latest request from {get_client_ip_address()}.')
+    logging.info(f'Economia RESTAPI received /api/v1/latest request from {get_client_ip_address()}.')
 
+    # Define dumping auxiliary functions
     def dump_datetime(value):
         """Deserialize DATETIME object into string form for JSON processing."""
         if value is None:
@@ -106,7 +104,7 @@ def return_latest_data(n):
 
     try:
         db = DBConnector(config.db_type, config.db_user, config.db_pw, config.db_host, config.db)
-        r = db.execute_query(f"SELECT * FROM selic ORDER BY n_reuniao DESC LIMIT {n}").fetchall()
+        r = db.execute_query(f"SELECT n_reuniao, data_reuniao, data_inicio_vigencia, data_fim_vigencia, meta_selic_aa, taxa_selic_aa, taxa_selic_am FROM selic ORDER BY n_reuniao DESC LIMIT {n}").fetchall()
         logging.info(r)
         index = 0
         results_dict = {}
