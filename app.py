@@ -13,7 +13,7 @@ import pandas as pd
 if config.environment == 'dev':
     os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'keyfile.json'
 
-l = Logger()
+l = RESTAPILogger()
 
 app = Flask('app')
 
