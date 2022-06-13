@@ -1,10 +1,15 @@
 # GCP Cloud Run Economia REST API
 
+## Required Infrastructure
+This project requires the usage of this repository and [this one](https://github.com/BeautyFades/WebScraper) for deployment. This repository is a REST API and the other one is for the webscraper. Besides these, you will also need a DB. I've hosted mine on CloudSQL with Postgres and added the default user's password as a Secret on Cloud Secret Manager. For this repository, the changes that need to be applied are inside the _config.py_ file. Keep in mind the DB IP Address, Username, Type, and Password (I recommend using a Secret Manager instead of hardcoding the password). The Database should have the following schema to work without further edits:
+
+![Schema](https://i.imgur.com/9AyvlIs.png)
+
 ## To deploy locally with Docker
-When deployed to GCRun, the environment variable _GOOGLE_APPLICATION_CREDENTIALS_ is set automatically, so locally you must uncomment lines 11 and 12 in **SelicExtractor.py** and have a valid GCP credentials file with enough permissions inside the Docker container for it to be referenced.
-1. Make sure that the environment variable _GOOGLE_APPLICATION_CREDENTIALS_ is going to be set corrently by placing the key ```.json``` file together with the other files (Dockerfile, app.py, SelicExtractor.py, etc.). It is going to be copied to the container and be referenced in the code to access GCS, BQ and other resources.
-2. ```cd``` to the directory containg all files and run ```docker build -t restapi .```
-3. Execute ```docker run -p 8001:8081 restapi```
+When deployed to GCRun, the environment variable _GOOGLE_APPLICATION_CREDENTIALS_ is set automatically, so in order to deploy locally you must have a valid GCP credentials file with enough permissions inside the Docker container for it to be referenced. You must also confirm that in the _config.py_ you have the environment set to ```dev```. The step by step guide is as follows:
+1. Make sure that the environment variable _GOOGLE_APPLICATION_CREDENTIALS_ is going to be set corrently by placing the GCP Service Account credentials file ```keyfile.json``` together with the other files in the root folder (along with the Dockerfile, app.py, etc.). It is going to be copied to the container and be referenced in the code to access GCS, BigQuery, Secret Manager. You must also make sure it has enough permissions for the resources it is going to access.
+2. ```cd``` to the directory containg all files and run ```docker build -t <IMAGE_NAME> .```, such as ```docker build -t restapi .```
+3. Execute ```docker run -p 8000:8080 <IMAGE_NAME>```, such as ```docker run -p 8000:8080 restapi```
 4. Access the Flask routes by going to ```http://127.0.0.1:8001/<route_name>```
 
 ## Deploy to Google Cloud Run

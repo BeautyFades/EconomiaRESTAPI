@@ -10,7 +10,7 @@ from utils.DBConnector import DBConnector
 import pandas as pd
 
 
-if config.environment == 'dev':
+if config.ENVIRONMENT == 'dev':
     os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'keyfile.json'
 
 l = RESTAPILogger()
@@ -41,9 +41,9 @@ def update_db_with_latest_gcs_data(admin_key):
             try:
                 logging.info(f'Downloading newest data from GCS to container.')
                 gcs_client = storage.Client()
-                bucket = gcs_client.get_bucket('economia-webscraper')
+                bucket = gcs_client.get_bucket(config.SOURCE_BUCKET_NAME)
                 file_name_on_gcs = datetime.today().strftime('%Y_%m_%d_' + 'selic.parquet')
-                blob = bucket.blob(f"bcb-selic/{file_name_on_gcs}")
+                blob = bucket.blob(f"{config.SOURCE_PATH}/{file_name_on_gcs}")
 
                 blob.download_to_filename('latest_selic.parquet')
                 logging.info(f'Data downloaded successfully. Starting insertion')
@@ -61,7 +61,7 @@ def update_db_with_latest_gcs_data(admin_key):
 
                 query_values = query_values[:-2] # Removing last two characters (', ') at the very end of string.
                 
-                db = DBConnector(config.db_type, config.db_user, config.db_pw, config.db_host, config.db)
+                db = DBConnector(config.DB_TYPE, config.DB_USER, config.DB_PW, config.DB_HOST, config.DB_NAME)
                 db.execute_query(f"INSERT INTO selic VALUES {query_values} ON CONFLICT (n_reuniao) DO NOTHING")
 
                 return Response(
@@ -103,7 +103,7 @@ def return_latest_data(n):
         return float(value)
 
     try:
-        db = DBConnector(config.db_type, config.db_user, config.db_pw, config.db_host, config.db)
+        db = DBConnector(config.DB_TYPE, config.DB_USER, config.DB_PW, config.DB_HOST, config.DB_NAME)
         r = db.execute_query(f"SELECT n_reuniao, data_reuniao, data_inicio_vigencia, data_fim_vigencia, meta_selic_aa, taxa_selic_aa, taxa_selic_am FROM selic ORDER BY n_reuniao DESC LIMIT {n}").fetchall()
         logging.info(r)
         index = 0
@@ -120,7 +120,7 @@ def return_latest_data(n):
             index += 1
 
         return Response(
-            "[{'returnStatus': 'success'}, {'statusCode': '200'}, {'message': "+str(results_dict)+"}]", 
+            "[{'returnStatus': 'success'}, {'statusCode': '200'}, {'message': " + str(results_dict) + "}]", 
             status=200, 
             mimetype='application/json'
         )
