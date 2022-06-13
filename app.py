@@ -5,7 +5,7 @@ import os
 from datetime import datetime
 from google.cloud import storage
 from google.oauth2 import service_account
-from ScraperLogger import ScraperLogger
+from Logger import RESTAPILogger
 from DBConnector import DBConnector
 import pandas as pd
 
@@ -13,7 +13,7 @@ import pandas as pd
 if config.environment == 'dev':
     os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'keyfile.json'
 
-l = ScraperLogger()
+l = Logger()
 
 app = Flask('app')
 

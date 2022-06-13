@@ -3,7 +3,7 @@ import sys
 from google.cloud import logging
 
 
-class ScraperLogger():
+class RESTAPILogger():
     def __init__(self):
         if config.environment == 'run-dev':
             client = logging.Client()
