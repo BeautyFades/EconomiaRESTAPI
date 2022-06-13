@@ -1,7 +1,7 @@
 # GCP Cloud Run Economia REST API
 
 ## Required Infrastructure
-This project requires the usage of this repository and [this one](https://github.com/BeautyFades/WebScraper) for deployment. This repository is a REST API and the other one is for the webscraper. Besides these, you will also need a DB. I've hosted mine on CloudSQL with Postgres and added the default user's password as a Secret on Cloud Secret Manager. For this repository, the changes that need to be applied are inside the _config.py_ file. Keep in mind the DB IP Address, Username, Type, and Password (I recommend using a Secret Manager instead of hardcoding the password). The Database should have the following schema to work without further edits:
+This project requires the usage of this repository and [this one](https://github.com/BeautyFades/WebScraper) for deployment. This repository is a REST API and the other one is for the webscraper. Besides these, you will also need a DB. I've hosted mine on CloudSQL with Postgres and added the default user's password as a Secret on Cloud Secret Manager. For this repository, the changes that need to be applied are inside the _config.py_ file. Keep in mind the DB IP Address, Username, Type, and Password (I recommend using a Secret Manager instead of hardcoding the password). The Database should have a table called ```selic``` with the following schema to work without further edits:
 
 ![Schema](https://i.imgur.com/9AyvlIs.png)
 
