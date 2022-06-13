@@ -5,8 +5,8 @@ import os
 from datetime import datetime
 from google.cloud import storage
 from google.oauth2 import service_account
-from Logger import RESTAPILogger
-from DBConnector import DBConnector
+from utils.Logger import RESTAPILogger
+from utils.DBConnector import DBConnector
 import pandas as pd
 
 
